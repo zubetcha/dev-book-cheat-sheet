@@ -82,3 +82,116 @@
 - 병렬 다운로드는 서버에 부하를 줄 수 있기 때문에 권장하지는 않음
 
 ### 5.3 XMLttpRequest
+- curl 커맨드 기능을 자바스크립트로 사용할 수 있게 해주는 기능
+- 처음에는 마이크로소프트의 IE5 용으로 설계되었지만 현재는 `WHATWG(Web Hypertext Application Working Group)`에서 사양이 정해져, 각종 브라우저에서 사용할 수 있게 됨 
+- HTTP처럼 **클라이언트가 서버로** 요청을 보내는 것에는 변함이 없으나 **서버가 클라이언트로** 요청을 보내는 것은 불가능
+
+```javascript
+var xhr = new XMLHttpRequest();
+xhr.open("GET", "/json", true);
+xhr.onload = function () {
+  // 응답이 돌아왔을 때 호출되는 메서드
+  if (xhr.status === 200) {
+    // JSON 파싱해서 표시
+      console.log(JSON.parse(xhr.responseText));
+  }
+};
+xhr.setRequestHeader("MyHeader", "HeaderValue")
+xhr.send(JSON.stringify({"message":  "hello world"}));
+```
+
+- open() 메서드로 도착지와 메서드를 설정하며, 세 번째 인자를 `true`로 설정하면 `비동기`로 실행됨
+- send() 메서드로 실제 전송 시작
+
+#### XMLRequestHTTP와 브라우저의 HTTP(폼) 요청 차이
+
+- 송수신할 때 HTML 화면이 새로고침되지 않음
+- GET, POST 이외의 메서드도 전송 가능
+- 폼의 경우 `key-value` 쌍의 데이터만 전송할 수 있지만, XMLHttpRequest는 `플레인 텍스트`, `JSON`, `바이너리 텍스트` 등 다양한 형식의 데이터 송수신 가능
+- 몇 가지 보안상 제약이 있음
+
+**Ajax**
+- asynchronous Javascript + XML의 약자
+- 화면을 지우지 않고 웹페이지를 읽어 오거나 시간이나 타이밍에 따라 몇 번이고 갱신할 수 있는 아키텍쳐
+- 브라우저가 송수신하면 파일 다운로드를 제외한 나머지 서버 응답을 받을 때 화면이 지워지고 새로운 페이지가 렌더링됨
+- XMLHttpRequest는 `자바스크립트`가 송수신을 담당하므로 화면이 지워지지 않음
+
+#### 코멧
+
+- `XMLHttpRequest`를 이용해 거의 실시간 `양방향 통신`할 수 있는 기능
+- 단방향 통신을 이용해 양방향 통신을 하기 위한 두 가지 방법
+  - `폴링`
+  - `롱 폴링`
+  
+[long polling](pubnub.com/blog/http-long-polling/)
+
+**폴링**
+- 클라이언트가 서버 쪽으로 빈번하게 요청하는 방식
+- 불필요한 요청과 응답 발생
+  - 대역과 CPU 낭비
+  - 모바일 환경이라면 소비 전력 낭비
+
+<p align="center">
+  <img src="https://images.ctfassets.net/3prze68gbwl1/20KLOkp9uPZUiZtjp5VpWn/e4e6f4e48f9f0129766611ead3da8fa6/HTTP_Polling.png" alt="폴링" />
+</p>
+
+
+**롱 폴링**
+- 클라이언트가 서버로 요청을 보내면 서버는 바로 응답하지 않고 응답을 보류한 채 대기
+- 서버가 통신을 종료하거나 요청이 타임아웃 될 때까지 응답이 돌아오지 않고 자유로운 타이밍에 서버 응답
+- HTTP는 서버에서 클라이언트로 요청을 보내는 전용 API가 아님
+- 또한 HTTP는 쿠키를 포함한 대량의 헤더를 송수신에 포함하는 구조
+- 서버에서 클라이언트로 연속으로 응답을 해야 하는 케이스에는 약한 편
+
+<p align="center">
+  <img src="https://images.ctfassets.net/3prze68gbwl1/2FEB0j6VRCXSe28P5ruiSZ/a149b8fdbbdb77e5f3bb81aab9902dac/HTTP_Long_Polling.png" alt="롱 폴링" />
+</p>
+
+
+
+#### XMLHttpRequest의 보안
+
+- `접근 가능한 정보 제한`과 `전송 제한`이라는 두 가지 제한으로 구성
+
+**접근 가능한 정보 제한**
+
+- 쿠키
+  - 스크립트로 `document.cookie` 를 통해 브라우저의 쿠키 접근 가능
+  - 이를 방지하기 위해 쿠키 속성 중 `httpOnly`를 설정하면 스크립트로 쿠키 접근 불가
+
+**전송 제한**
+- 도메인
+  - `동일 출처 정책(same origin policy)`으로 요청을 보낼 수 있는 도메인 제한 설정
+  - `교차 출처 리소스 공유(CORS, cross-origin resource sharing)` 액세스 제한 시스템
+- 메서드
+  - `CONNECT`, `TRACE`, `TRACK`을 메서드로 지정하면 open() 메서드 호출 시 `SecurityError` 예외 응답
+- 헤더
+  - 현재 금지되어 있는 것
+    - 현재의 프로토콜 규약이나 환경에 영향을 미치는 것
+    - 쿠키처럼 보안에 영향을 주는 것
+    - 브라우저의 능력을 넘을 수 없을 것
+      - 브라우저 자신이 지원하지 않는 압축 형식을 Accept-Encoding으로 지정하는 행위 등
+  - 앞으로 사용될 것에 대비해 `Sec-`, `Proxy-`로 시작하는 키 이름도 금지
+
+
+### 5.4 지오로케이션
+
+#### 클라이언트 자신이 위치를 구하는 방법
+- 모던 브라우저는 지오로케이션 API 제공
+  - 모바일: 내장된 GPS나 기지국 정보를 활용
+  - 컴퓨터: 와이파이 등을 이용해 대략적인 위치 축측
+
+
+**와이파이에서 위치 정보를 알아내는 방식**
+- 클라이언트는 OS의 API를 이용해 현재 자신이 접근 가능한 액세스 포인트의 BSSID 획득
+- BSSID로 서버에 문의해 위도 및 경도 조회
+
+
+> BSSID는 SSID와는 다른 정보로, 와이파이 기기의 식별자의 48비트 수치   
+> 기기마다 독특한 수치로 되어 있으며, 맥 주소와 같은 것
+
+
+#### 서버가 클라이언트 위치를 추측하는 방법
+- 지오 IP라고 불리는 IP 주소로 추측하는 방법
+- IP 주소는 지역마다 등록 관리 기관이 있어, 기업이나 프로바이더 등에 IP 주소 할당
+- 등록 기관이 정확한 장소까지 관리하는 것은 아님
