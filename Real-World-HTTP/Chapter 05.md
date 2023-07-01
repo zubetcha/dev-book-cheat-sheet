@@ -218,5 +218,95 @@ xhr.send(JSON.stringify({"message":  "hello world"}));
 > 각 프로그래밍 언어가 제공하는 함수, 클래스 메서드(정적 메서드)와 같은 것을 뜻함
 
 - 원격 프로시저 호출(RPC, Remote Procedure Call)은 다른 컴퓨터에 있는 기능을 마치 자신의 컴퓨터에 있는 것처럼 호출하고, 필요에 따라 반환 값을 받는 구조
+- 원격 메서드 호출(RMI, Remote Method Invocation)이라고도 불림
+
+#### 5.6.1 XML-RPC
+
+- 최초로 규격화된 RPC
+- HTTP/1.0
+- POST 메서드 사용
+- 파라미터와 반환값 모두 XML로 표현 -> Content-Type은 항상 text/xml
+- Content-Length를 항상 명시해야 함
+
+**XML-RPC 요청 예제**
+```xml
+POST /RPC2 HTTP/1.0
+Host: betty.userland.com
+Content-Type: text/xml
+Content-length: 181
+
+<?xml version="1.0"?>
+<methodCall>
+  <methodName>examples.getStateName</methodName>
+  <params>
+    <param>
+      <value>
+        <i4>41</i4>
+      </value>
+    </param>
+  </params>
+</methodCall>
+```
+
+**XML-RPC 응답 예제**
+```xml
+HTTP/1.1 200 OK
+ConnectionL close
+Content-Length: 158
+Content-Type: text/xml
+
+<?xml version="1.0"?>
+<methodResponse>
+  <params>
+    <param>
+      <value>
+        <string>
+          South Dakota
+        </string>
+      </value>
+    </param>
+  </params>
+</methodResponse>
+```
+
+**XML-RPC 파라미터 데이터 타입**
+
+| 태그명 | 데이터 타입 |
+| :---: | :---: |
+|i4, int| 정수 |
+|boolean|테이블형|
+|string|문자열형|
+|double|부동소수정수형|
+|dateTime.iso8601|날짜형|
+|base64|BASE64 인코딩 바이너리|
+|struct|구조체|
+|array|배열|
+
+#### 5.6.2 SOAP
+
+- XML-RPC를 확장하여 만들어진 규격
+- W3C에서 규격화
+- 단순한 RPC였던 XML-RPC보다 복잡한 구조
+- 메일 전송 프로토콜(SMTP)를 사용해 SOAP 메시지를 주고 받을 수 있음
+- SOAP 메시지 구조
+  - 헤더: 요청 메서드, 트랜잭션 정보 등
+  - 엔벨로프: 데이터
+
+<img src="https://t1.daumcdn.net/cfile/tistory/1311C6184C8DD6BA5E" alt="SOAP 메시지 구조" />
+
+#### 5.6.3 JSON-RPC
+- XML-RPCdml XML 대신 `JSON`을 이용한 원격 프로시져 호출
+- 요청 시 필요한 헤더: Content-Type, Content-Length, Accept
+- 메서드는 대부분 `POST`를 사용하나 GET도 사용 가능
+- json 구조
+  - jsonrpc: 버전 지정 목적, 필수
+  - id: 요청과 응답을 매칭하기 위한 것으로, 숫자나 문자열 사용 가능
+  - method: 메서드 이름
+  - params: 파라미터로, 배열과 객체도 가능하며 생략도 가능
+- 반환값은 입력에 사용한 id와 반환 값이 result 키에 저장되어 응답
+- 요청에서 id를 생략하면 서버에서 응답을 돌려주지 않는 `Notification` 모드가 됨
 
 
+**JSON-RPC 기본 예제**
+```
+```
