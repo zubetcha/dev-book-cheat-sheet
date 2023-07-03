@@ -309,4 +309,76 @@ Content-Type: text/xml
 
 **JSON-RPC 기본 예제**
 ```
+POST /josnrpc HTTP/1.1
+Host: api.example.com
+Content-Type: application/json
+Content-Length: 94
+Accept: application/json
+
+{
+  "jsonrpc": "2.0",
+  "method": "subtract",
+  "params": {
+    "subtrahend": 23,
+    "minuend": 42
+  },
+  "id": 3,
+}
+
+HTTP/1.1 200OK
+Content-Type: application/json
+Content-Length: 41
+
+{
+  "jsonrpc": "2.0",
+  "result": 19,
+  "id": 3
+}
 ```
+
+- XML-RPC의 응답 status code는 항상 200이었던 것과 달리 JSON-RPC는 다른 status code도 응답
+  - 200 OK: 정상 종료
+  - 204 No Response / 202 Accepted: Notification 시의 반환값
+  - 307 Temporary Redirect / 308 Permanent Redirect: 리디렉트
+  - 405 Method Not Allowed: GET 메서드가 지원되지 않는 안전하지 않은 메서드에 GET 메서드 이용
+  - 415 Unsupported Media Type: Content-Type이 application/json이 아님
+
+### 5.7 WebDAV
+
+- HTTP를 확장해 분산 파일 시스템으로 사용할 수 있게 한 기술
+  - IE의 네트워크 위치 추가, Mac OS의 파인더, 리눅스 계열 OS의 그놈 등에 쉽게 연결
+- 구글 드라이브, 원드라이브 등과 같은 온라인 스토리지 서비스와 다른 점
+  - `동기`를 전제로 한다는 것
+- Git에서 사용하는 전송용 프로토콜 중 하나인 `HTTPS` 내부에서 WebDAV 사용 
+  - 다른 하나인 SSH는 내부에서 오리지널 Git 프로토콜 사용
+  - 차이만 전송하므로 WebDAV보다 Git 프로토콜이 속도가 더 빠름
+
+
+**용어 정리**
+- 리소스: 데이터를 저장하는 아토믹 요소, 일반 파일 시스템에서는 `파일`로 부르지만 HTTP 용어 그대로 계승
+- 컬렉션: `폴더`와 `디렉터리`에 해당하는 요소
+- 프로퍼티: 리소스와 컬렉션이 가질 수 있는 추가 속성으로, 작성일시와 갱신일시, 최종 갱신자와 같은 정보에 해당
+- 락: 동시에 같은 파일을 편집하려고 할 때 마지막에 전송된 내용 이외에는 지워져버리는 걸 방지하기 위해 먼저 선언한 사람 이외의 변경을 거절하는 시스템
+
+**메서드**
+- HTTP/1.1의 POST, GET, PUT, DELETE 메서드 외에 몇 가지 메서드가 추가됨
+  - COPY / MOVE: 대용량의 컨텐츠 처리 목적
+  - MKCOL: 컬렉션을 작성하는 메서드 (리소스 작성은 POST)
+  - PROPFIND: 컬렉션 내의 요소 목록 취득
+  - LOCK / UNLOCK: 파일 잠금 여부 제어
+
+### 5.8 웹사이트 간 공통 인증 및 허가 플랫폼
+
+| 용어 | 설명 |
+| :---:  | :---:  |
+| 인증<br/>(authentication) | - 로그인하려는 사용자가 누군지 확인<br/>- 브라우저를 조작하는 사람이 서비스에 등록된 어느 사용자 ID의 소유자인지 확인 |
+| 권한 부여<br/>(authorication) | - 인증된 사용자가 누군지 확인 후 그 사용자에게 부여할 권한 범위 결정 |
+
+#### 5.8.1 싱글 사인온 (SSO, single sign-on)
+- 시스템 간 계정 관리를 따로 하지 않고, 한 번의 로그인을 전체 시스템에 유효하게 하는 기술
+- 프로토콜이나 정해진 규칙이 아닌, 이런 용도로 사용되는 시스템을 가르키는 명칭
+- 사용 예
+  - 사용자 ID를 일원화해 관리
+  - 서비스 앞단에 HTTP 프록시 서버를 두고 인증을 대행
+  - 각 서비스에 인증을 대행하는 에이전트를 넣고 로그인 시 중앙 서버에 액세스 해 로그인됐는지 확인
+  
