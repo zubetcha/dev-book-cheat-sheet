@@ -37,3 +37,46 @@ console.log(names[2].toUpperCase());
 ```
 
 - 즉, 타입 시스템은 정적 타입의 정확성을 완전히 보장하지는 않음
+
+<br/>
+
+## 아이템 2 타입스크립트 설정 이해하기
+
+`noImplicitAny`
+
+- 변수들이 미리 정의된 타입으 가져야 하는지 여부를 제어
+- 아래 코드는 noImplicitAny가 설정되어 있지 않으면 매개변수와 반환값은 모두 암시적으로 `any`로 추론됨
+- 그러나 noImplicitAny를 true로 설정하면 오류가 발생함
+
+```javascript
+function sum(a, b) {
+  return a + b;
+}
+```
+
+`strictNullChecks`
+
+- `null`과 `undefined`가 모든 타입에서 허용되는지 확인
+- 런타임 에러를 방지하기 위해 설정하는 것이 좋음
+- 아래 코드는 strictNullChecks를 해제하면 유효하며, true로 설정하면 오류가 발생함
+
+```javascript
+const x: number = null;
+```
+
+- strictNullChecks를 true로 설정했을 때에는 명시적으로 타입을 설정해야 함
+
+```javascript
+const x: number | null = null;
+```
+
+<br/>
+
+## 아이템 3 코드 생성과 타입이 관계없음을 이해하기
+
+> 타입스크립트 컴파일러의 역할
+>
+> - 최신 타입스크립트/자바스크립트를 브라우저에서 동작할 수 있도록 구버전의 자바스크립트로 트랜스파일
+> - 코드의 타입 오류 체크
+
+### 타입 오류가 있는 코드도 컴파일 가능
