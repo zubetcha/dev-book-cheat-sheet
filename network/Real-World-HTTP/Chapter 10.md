@@ -40,3 +40,55 @@
 <br/>
 
 ## 10.3 크로스 사이트 스크립팅
+
+- `XSS`라고도 부름
+- 유저가 입력한 값을 검증하지 않고 그대로 출력하는 경우, 입력한 값이 아닌 악의적인 스크립트가 삽입해 브라우저에서 그대로 실행되도록 하는 공격 수단
+- 쿠키 정보에 접근하는 스크립트이거나, 유저가 입력한 정보를 가로채는 스크립트이면 특히 위험
+- 서버 측 방어로는 1) 입력 시점 검증, 2) 출력 시점 검증 등이 있음
+
+### 10.3.1 유출 방지 쿠키의 설정
+
+- `httpOnly` 속성 설정
+- 자바스크립트에서 쿠키에 접근할 수 없게됨
+
+### 10.3.2 X-XSS-Protection 헤더
+
+- HTML 인라인에서 스크립트 태그를 사용하는 경우 등 수상한 패턴 감지
+- `X-`가 붙어있기 때문에 비공식 헤더이지만 IE, 크롬, 사파리 등의 브라우저가 지원하며 파이어폭스는 미지원
+
+```
+X-XSS-Protection: 1; mode=block
+```
+
+### 10.3.3 Content-Security-Policy 헤더
+
+- 웹사이트에서 사용할 수 있는 기능을 세밀하게 on/off 할 수 있는 기술로, W3C에서 정의
+- 웹사이트에 필요한 기능을 서버에서 설정하여 XSS처럼 자바스크립트가 예상치 못하게 동작하는 것을 제한
+
+#### HTML에서 로드할 수 있는 리소스 관련
+
+**리소스 파일 사용 권한 설정 지시문**
+
+- base-uri: 도큐먼트의 base URI (상대 경로의 시작점)
+- child-src: `Web Worker`, `frame`, `iframe`으로 이용할 수 있는 URL
+- connect-src: `XMLHttpRequest`, `WebSocket`, `EventSource`와 같은 자바스크립트로 연결할 출처
+- font-src: CSS의 `@font-face`에서 로드할 웹 폰트
+- img-src: `이미지`와 `파비콘`을 로드할 출처
+- manifest-src: `매니페스트`를 로드할 출처
+- media-src: `audio`와 `video`를 제공하는 출처
+- object-src: 플래시나 자바 애플릿 등 기타 `플러그인`에 대한 제어
+- script-src: `자바스크립트`를 로드할 출처
+- style-src: 읽기 가능한 `스타일시트`를 로드할 출처
+
+**지시문에 대해 설정할 수 있는 속성**
+
+- none: 리소스 로드 금지
+- self: 같은 출처 지정
+- unsafe-inline: 인라인 스크립트 태그, 인라인 스타일 태그 등을 허가하 - `XSS 위험`
+- unsafe-eval: 문자열을 자바스크립트로서 실행하는 eval(), new Function(), setTimeout() 등의 실행 허가 - `XSS 위험`
+- data:: data:URI 허가
+- mmediastream:: mediastream:URI 허가
+- blob:: blob:URL 허가
+- filesystem: filesystem:URI 허가
+
+### 리소스 이외의 설정 지시문
