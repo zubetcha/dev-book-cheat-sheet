@@ -91,4 +91,59 @@ X-XSS-Protection: 1; mode=block
 - blob:: blob:URL 허가
 - filesystem: filesystem:URI 허가
 
-### 리소스 이외의 설정 지시문
+#### 리소스 이외의 설정 지시문
+
+**일괄 보안 설정**
+
+- default-src: 리소스의 접근 범위 일괄 설정 (개별 설정이 우선함)
+- sandbox: 팝업, 폼 등의 허용 설정
+- upgrade-insecure-requests: HTTP 통신을 모두 HTTPS로 변경
+
+**기타**
+
+- referer: 리퍼러의 동작 변경
+- report-uri: 브라우저에서 위반 사항을 탐지하면 지정된 서버로 JSON 포맷으로 전송
+- reflected-xss: 반사형 크로스 사이트 스크립팅으로 불리는 공격에 대한 필터 활성화
+
+#### Content-Security-Policy-Report-Only
+
+- `Content-Security-Policy` 헤더는 XSS의 위협을 막아주지만, 종종 웹사이트의 동작을 멈추게 할 수도 있음
+- `Content-Security-Policy-Report-Only` 헤더를 사용하면 검사는 하지만 동작은 멈추지 않음
+
+### 10.3.4 Content-Security-Policy와 자바스크립트 템플릿 엔진
+
+- 일부 자바스크립트 템플릿 엔진은 `new Function`을 사용하여 동적으로 함수를 생성함
+- 동적 함수 생성은 CSP의 `unsafe-eval`에 해당하므로 제대로 동작하지 않을 수도 있음
+- 사용하는 템플릿 엔진이 CSP를 지원하는지 확인해 볼 필요 O
+
+### 10.3.5 Mixed Content
+
+> `Mixed Content`  
+> 광고나 외부 서비스가 제공하는 컨텐츠 등으로 인해 HTTPS와 HTTP가 뒤섞이는 경우를 뜻하며, 이런 경우 브라우저는 경고나 오류를 표시함
+
+- 근본적으로 해결하는 방법은 모두 HTTPS로 대체하는 것
+- 그러나 `Content-Security-Policy` 헤더에 `ungrade-insecure-request` 지시문을 설정하여 해결 가능
+  - 해당 지시문을 설정하면 `http://` 로 시작하더라도 `https://` 로 적혀 있는 것처럼 취득함
+
+```
+// 헤더 설정
+Content-Security-Policy: upgrade-insecure-request
+
+// meta 태그
+<meta http-equiv="Content-Security-Policy" content="upgrade-insecure-request"/>
+
+// mixed-content를 오류로 처리
+Content-Security-Policy: block-all-mixed-content
+```
+
+### 10.3.6 교차 출처 리소스 공유
+
+> 교차 출처 리소스 공유 (cross-origin resource sharing, CORS)  
+> 오리진(출처, 도메인) 사이에 리소스를 공유하는 방법으로, W3C에서 규격화
+
+- 클라이언트에서 서버로 접근하기 직전까지의 권한 확인 프로토콜로, 보안을 위한 기능
+- 이 때, 보호 대상은 클라이언트가 아닌 API를 제공하는 서버
+- 리소스 공유는 `XMLHttpRequest`나 `Fetch API`에 의한 것을 뜻함
+- `Content-Security-Policy` 헤더에 `conntect-src:` 지시문을 설정할 수도 있으나 더 엄격하게 제한하기 위함
+
+
