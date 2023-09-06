@@ -1,6 +1,6 @@
 # Chapter 01 타입스크립트 알아보기
 
-## 아이템 1 타입스크립트와 자바스크립트의 관계 이해하기
+## 1. 타입스크립트와 자바스크립트의 관계 이해하기
 
 - 타입스크립트는 문법적으로도 자바스크립트의 상위집합
   - 자바스크립트에 문법 오류가 없다면 유효한 타입스크립트 프로그램이라고 할 수 있음
@@ -40,11 +40,11 @@ console.log(names[2].toUpperCase());
 
 <br/>
 
-## 아이템 2 타입스크립트 설정 이해하기
+## 2. 타입스크립트 설정 이해하기
 
 `noImplicitAny`
 
-- 변수들이 미리 정의된 타입으 가져야 하는지 여부를 제어
+- 변수들이 미리 정의된 타입을 가져야 하는지 여부를 제어
 - 아래 코드는 noImplicitAny가 설정되어 있지 않으면 매개변수와 반환값은 모두 암시적으로 `any`로 추론됨
 - 그러나 noImplicitAny를 true로 설정하면 오류가 발생함
 
@@ -72,11 +72,54 @@ const x: number | null = null;
 
 <br/>
 
-## 아이템 3 코드 생성과 타입이 관계없음을 이해하기
+## 3. 코드 생성과 타입이 관계없음을 이해하기
 
 > 타입스크립트 컴파일러의 역할
 >
 > - 최신 타입스크립트/자바스크립트를 브라우저에서 동작할 수 있도록 구버전의 자바스크립트로 트랜스파일
 > - 코드의 타입 오류 체크
 
-### 타입 오류가 있는 코드도 컴파일 가능
+### 타입 오류가 있는 코드도 컴파일 가능하다.
+
+- 컴파일은 타입 체크와 독립적으로 동작 > 타입 오류가 있는 코드도 컴파일 가능
+- 문제가 될 만한 부분을 알려주긴 하지만 빌드를 멈추지는 않음
+- 오류가 있을 때 컴파일하지 않으려면 tsconfig에 `noEmitOnError` 설정
+
+### 런타임에는 타입 체크가 불가능하다.
+
+- 타입스크립트가 자바스크립트로 컴파일되는 과정에서 모든 인터페이스, 타입, 타입 구문은 제거됨
+- 타입을 명확하기 하게 위해서는 런타임에도 타입 정보를 유지하는 방법이 필요
+
+```typescript
+interface Square {
+  width: number;
+}
+
+interface Rectangle extends Square {
+  height: number;
+}
+
+type Shape = Square | Rectangle;
+
+function calculateArea(shape: Shape) {
+  // ts error: Rectangle은 타입인데 값으로 참조되고 있음
+  if (shape instanceof Rectangle) {
+    // ts error: Shape 타입에는 height 속성이 없음
+    return shape.width * shape.height;
+  } else {
+    return shape.width * shape.width;
+  }
+}
+```
+
+```typescript
+function calculateArea(shape: Shape) {
+  if ('height' in shape) {
+    shape; // Regtangle로 타입 추론
+    return shape.width * shape.height;
+  } else {
+    shape; // Square로 타입 추론
+    return shape.width * shape.width;
+  }
+}
+```
