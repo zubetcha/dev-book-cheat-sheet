@@ -132,3 +132,135 @@ Stream Identifier
 <br/>
 
 ## 7.2 Fetch API
+
+- XMLHTTPRequest와 마찬가지로 서버에 액세스하는 함수
+- 자바스크립트에서 사용
+
+#### 특징
+
+- XMLHTTPRequest보다 오리진 서버 밖으로의 액세스 등 CORS 제어 용이
+- 자바스크립트의 모던한 비동기 처리 방식인 Promise를 따름
+- 캐시 제어 가능
+- 리다이렉트 제어 가능
+- referrer 정책 설정 가능
+- Service Worker 내에서 이용 가능
+- 보안 제한
+  - 송수신 시 제한되는 헤더 존재
+  - same origin 정책 엄격하게 적용
+  - 브라우저에서 ssh로 외부 서버 연결 불가능
+  - Git 프로토콜 전송 불가능
+  - 웹 서버 개발 불가능
+
+### 7.1.2 Fetch API의 기본
+
+#### fetch 함수 예제
+
+```javascript
+fetch('news.json', {
+  method: 'GET',
+  mode: 'cors',
+  credentials: 'include',
+  cache: 'default',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+})
+  .then((response) => {
+    return response.json();
+  })
+  .then((json) => {
+    console.log(json);
+  });
+```
+
+- fetch() 함수 호출
+- fetch 함수의 두 번째 인자는 옵션 객체
+- 첫 번째 then 함수에 서버로부터 응답이 온 후 호출되는 콜백 함수 전달
+  - 응답의 헤더 부근까지 읽기를 마친 시점에 호출됨
+  - 바디를 어떤 데이터 형식으로 가져올지 메서드 호출로 결정
+- 두 번째 then 함수에는 시간이 걸리는 처리를 작성하고, 그 처리가 Promise를 반환할 경우 다시 then 연결
+
+<br/>
+
+#### Fetch API가 지원하는 데이터 형식
+
+| 메서드        | 형식        | 설명                                                                                            |
+| :------------ | :---------- | :---------------------------------------------------------------------------------------------- |
+| arrayBuffer() | ArrayBuffer | 고정 길이 바이너리 데이터. Typed Array로 읽고 쓰기 가능                                         |
+| blob()        | Blob        | 파일 콘텐츠를 나타내는 MIME 타입 + 바이너리 데이터. FileReader를 경유해 ArrayBuffer로 변환 가능 |
+| formData()    | FormData    | HTML 폼과 호환되는 이름과 값의 쌍                                                               |
+| json()        | Object      | JSON을 해석해 자바스크립트의 오브젝트, 배열 등으로 구성되는 오브젝트                            |
+| text()        | string      | 문자열                                                                                          |
+
+<br/>
+
+#### Fetch API로 사용할 수 있는 메서드
+
+- CORS 안전: GET, HEAD, POST
+- 사용 불가: CONNECT, TRACE, TRACK
+
+<br/>
+
+#### Fetch API의 CORS 모드
+
+- cors: 다른 오리진 서버로의 액세스 허용 (XHR 기본값 및 XHR에서는 모드 변경 불가)
+- same-origin: 다른 오리진 서버로의 액세스를 오류로 취급
+- no-cors: CORS 접속 무시 및 빈 응답으로 돌아옴 (Fetch API 기본값)
+
+<br/>
+
+#### Fetch API의 credentials
+
+XMLHTTPRequest에서는 withCredential 프로퍼티에 true를 설정하면 include를 설정한 것과 동일하다.
+
+- omit: 쿠키를 전송하지 않음 (Fetch API 기본값)
+- same-origin: 출처가 같은 경우에만 쿠키 전송 (XHR 기본값)
+- include: 쿠키 전송
+
+### 7.2.2 Fetch API만 할 수 있는 것
+
+#### 캐시 제어
+
+- default: 표준 브라우저 동작에 따름 (기본값)
+- no-store:
+  - 캐시가 없는 것으로 간주하여 HTTP 요청
+  - 결과도 캐시하지 않음
+- reload:
+  - 브라우저 새로고침과 같이 캐시가 없는 간주하여 HTTP 요청
+  - Etag 등은 보내지 않음
+  - 캐시가 가능하면 결과 캐시
+- no-cache:
+  - 기한 내의 캐시가 있어도 HTTP 요청 전송
+  - 로컬 캐시의 Etag 등도 전송
+  - 서버가 304를 반환하면 캐시한 콘텐츠 사용
+- force-cache:
+  - 기한이 지난 캐시라도 존재하면 사용
+  - 캐시가 없으면 HTTP 요청 전송
+- only-if-cached:
+
+  - 기한이 지난 캐시라도 존재하면 사용
+  - 캐시가 없으면 오류 발생
+
+no-store, reload, no-cache 옵션은 캐시 상태와 관계 없이 반드시 HTTP를 요청하며, 반대로 force-cache와 if-only-cached는 적극적으로 캐시 사용한다.
+
+#### 리다이렉트 제어
+
+- follow: 최대 20 리다이렉트까지 리다이렉트를 따라감 (기본값)
+- manual: 리다이렉트를 따라가지 않고 리다이렉트가 있다는 사실만 전달
+- error: 네트워크 오류로 함
+
+manual 지정 시 리다이렉트가 있으면, 응답 자체가 아니라 응답을 감싸 필터링된 결과를 응답으로서 반환한다. 이 응답은 type 속성에 `opaqueredirect`라는 문자열만 들어 있으며, 보안을 위해 이외의 정보는 필터링되어 얻을 수 없다. 바디는 null이며, 스테이터스는 0, 헤더는 없다.
+
+#### Service Worker 대응
+
+> Service Worker  
+> 웹 서비스의 클라이언트와 서버 사이에서 동작하는 중간 레이어로,  
+> 웹이 애플리케이션으로서의 기능성을 지닐 수 있도록 라이프사이클과 통신 내용을 제어할 수 있게 해주는 Web API
+
+- 현재 Service Worker 내에서 외부 서비스로 접근할 때는 Fetch API만 사용 가능
+
+<br/>
+
+## 7.3 server-sent events
+
+- server-sent events는 HTML5의 기능 중 하나
