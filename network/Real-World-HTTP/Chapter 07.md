@@ -264,3 +264,173 @@ manual 지정 시 리다이렉트가 있으면, 응답 자체가 아니라 응�
 ## 7.3 server-sent events
 
 - server-sent events는 HTML5의 기능 중 하나
+- 기술적으로는 HTTP/1.1의 청크 형식을 이용한 통신 기능을 바탕으로 함
+  - 코멧의 롱 폴링 + 청크 응답 조합
+  - 한 번의 클라이언트 요청에 대해 여러 이벤트 전송
+  - 조금씩 전송한다는 특징을 응용해, 서버에서 임의의 시점에 클라이언트로 이벤트 전달
+- 청크 방식을 사용하지만 HTTP 위에 `이벤트 스트림`이라고 불리는 별도의 텍스트 프로토콜을 실었음
+  - 이벤트 스트림 MIME 타입: text/event-stream
+- 자바스크립트에서는 EventSource 클래스를 사용해 server-sent events에 접근
+
+<br/>
+
+#### text/event-stream 예제
+
+- 텍스트 문자 인코딩 방식: UTF-8
+- 데이터는 태그 이름 뒤에 기술
+- 빈 줄로 데이터 구분
+- data 태그가 연속으로 전송되는 곳은 줄바꿈이 포함된 하나의 data로 처리
+
+```text
+id: 10
+event: ping
+data: {"time": 2016-12-26T15:52:01+0000}
+
+id: 11
+data: Message From PySpa
+data: #eng channel
+```
+
+<br/>
+
+#### 이벤트 스트림 태그 종류
+
+- id: 이벤트를 식별하는 ID로, 재전송 처리에서 사용
+- event: 이벤트 이름 설정
+- data: 이벤트와 함께 보낼 데이터
+- retry: 재접속 대기 시간 (단위: ms)
+
+<br/>
+
+#### 자바스크립트 EventSource 예제
+
+```javascript
+const eventSource = new EventSource('example.php');
+
+eventSource.onmessage = (e) => {
+  const newElement = document.createElement('li');
+
+  newElement.innerHTML = 'message: ' + e.data;
+  eventList.appendChilde(newElement);
+};
+
+eventSource.addEventListener('pint', (e) => {
+  const newElement = document.createElement('li');
+  const obj = JSON.parse(e.data);
+
+  newElement.innerHTML = 'pint at ' + obj.time;
+  eventList.appendChild(newElement);
+});
+```
+
+- onmessage 이벤트 핸들러는 이벤트 태그가 없는 data 태그 메시지 수신 시 콜백 함수 호출
+- addEventListener는 이벤트 이름을 지정해 콜백 함수 등록하여 특정 이벤트 태그가 붙은 메시지만 다룸
+- 클라이언트는 메시지의 ID를 저장하고 재접속 시에는 마지막으로 수신한 ID를 `Last-Event-ID` 헤더에 설정하여 서버로 전송
+- 서버는 클라이언트가 Last-Event-ID 헤더에 설정되어 있는 메시지까지 수신한 것으로 판단해 이후 이벤트만을 클라이언트로 전송
+
+<br/>
+
+## 7.4 웹소켓
+
+- 서버/클라이언트 사이에 오버헤드가 적은 양방향 통신 목적으로 사용
+- 통신이 확립되면 서버/클라이언트 사이에서 일대일 통신 수행
+- 목적지가 정해져 있으므로 바디에 해당하는 2~14 Byte에 해당하는 데이터만 프레임 단위로 송수신
+
+<br/>
+
+### 7.4.1 웹소켓은 스테이트풀
+
+- HTTP 기반 프로토콜과 달리 `스테이트풀`한 통신
+- 예를 들어 채팅 같은 경우 대화방 단위로 커넥션을 온 메모리로 관리
+  - 이 경우 접속이 끊어졌을 때 재접속하는 경우 이전과 같은 서버로 연결 필요
+  - 단순한 HTTP 기반 로드 밸런서는 사용 불가
+
+<br/>
+
+### 7.4.2 자바스크립트의 클라이언트 API
+
+- 웹소켓은 HTTP의 하위 레이어인 TCP 소켓에 가까운 기능을 제공하는 API
+- 자바스크립트의 API도 TCP 소켓의 API에 가까운 형태로 되어 있음
+- 통신은 서버가 수신을 기다리는 상태에서 클라이언트 쪽에서 먼저 접속
+  1. 서버가 특정 IP 주소, 포트 번호로 시작 (Listen)
+  2. 클라이언트(브라우저)가 서버에게 통신 시작 선언 (Connect)
+  3. 클라이언트가 보낸 접속 요청을 서버가 받아들임 (Accept)
+  4. 서버에는 소켓 클래스의 인스턴스가 넘어옴
+  5. 서버가 받아서 처리하면 클라이언트의 소켓 인스턴스는 송신 기능, 수신 기능이 활성화됨
+
+<br/>
+
+#### 자바스크립트 예제
+
+- WebSocket 클래스의 생성자로 접속할 URL 지정
+- open: 소켓 연결 이벤트 핸들러
+- send(): 서버로 데이터 전송
+- onmessage: 서버로부터 받는 데이터 수신 이벤트 핸들러
+- close(): 소켓 닫기
+
+```javascript
+var socket = new WebSocket('ws://game.example.com:12010/updates');
+
+socket.open = () => {
+  setIntervel(() => {
+    if (socket.bufferedAmount === 0) {
+      socket.send(getUpdateData());
+    }
+  }, 50);
+};
+```
+
+<br/>
+
+### 7.4.3 접속
+
+- 웹소켓은 프로토콜 업그레이드를 사용
+  - 일반 HTTP로 시작한 후 그 안에서 프로토콜을 업그레이드해 웹소켓으로 전환
+
+#### 웹소켓 통신 시작 요청 예제
+
+```shell
+GET /chat HTTP/1.1
+Host: server.example.com
+Upgrade: websocket
+Connection: Upgrade
+Sec-WebSocket-Key: sfkjnsfnksndkf
+Origin: http://example.com
+Sec-WebSocket-Protocol: chat, superchat
+Sec-WebSocket-Version: 13
+```
+
+- Sec-WebSocket-Key: 랜덤하게 생성한 16바이트 값을 base64로 인코딩한 문자열
+- Sec-WebSocket-Version: 현 시점에서는 13으로 고정
+- Sec-WebSocket-Protocol:
+  - 옵션
+  - 웹소켓은 단순히 소켓 통신 기능만 제공하기 때문에 그중 어떤 형식을 사용할지 애플리켕션에서 결정
+  - 복수의 프로토콜 선택 가능
+
+#### 웹소켓 통신 시작 서버 응답 예제
+
+```shell
+HTTP/1.1101 Switching Protocols
+Upgrade: websocket
+Connection: Upgrade
+Sec-WebSocket-Accept: ksdjnfkjsdnfknskd
+Sec-WebSocket-Protocol: chat
+```
+
+- Sec-WebSocket-Accept: Sec-WebSocket-Key를 정해진 규칙으로 변환한 문자열로, 이를 통해 클라이언트는 서버와의 통신 확립 검증 가능
+- Sec-WebSocket-Protocol:
+  - 클라이언트로부터 서브 프로토콜 목록을 받았을 때 하나를 선택해서 반환
+  - 클라이언트가 보낸 프로토콜 이외의 다른 프로토콜을 응답을 받으면 클라이언트는 접속을 거부해야 함
+
+<br/>
+
+### 7.4.4 Socket.IO
+
+- 웹소켓을 좀 더 쉽게 사용할 수 있게 해주는 라이브러리
+
+#### Socket.IO의 장점
+
+- 웹소켓을 사용할 수 없을 때는 XMLHttpRequest에 의한 롱 폴링으로 에뮬레이션해, 서버에서의 송신을 실현하는 기능 탑재
+- 웹소켓 단절 시 자동으로 재접속 시도
+- 클라이언트뿐만 아니라 서버에서 사용할 수 있는 구현도 있어, 클라이언트가 기대하는 절차로 폴백인 XMLHttpRequest 통신 핸들링 가능
+- 로비 기능
