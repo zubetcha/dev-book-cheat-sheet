@@ -87,7 +87,7 @@ const x: number | null = null;
 
 ### 런타임에는 타입 체크가 불가능하다.
 
-- 타입스크립트가 자바스크립트로 컴파일되는 과정에서 모든 인터페이스, 타입, 타입 구문은 제거됨
+- 타입스크립트가 자바스크립트로 컴파일되는 과정에서 모든 **인터페이스, 타입, 타입 구문은 제거**됨
 - 타입을 명확하기 하게 위해서는 런타임에도 타입 정보를 유지하는 방법이 필요
 
 ```typescript
@@ -112,6 +112,12 @@ function calculateArea(shape: Shape) {
 }
 ```
 
+#### 런타임에도 타입을 유지하는 방법
+
+1. 속성 확인
+
+- 타입 체커가 shape의 타입을 Rectangle로 보정해줌
+
 ```typescript
 function calculateArea(shape: Shape) {
   if ('height' in shape) {
@@ -123,3 +129,155 @@ function calculateArea(shape: Shape) {
   }
 }
 ```
+
+2. 태그 기법
+
+- 런타임에 접근 가능한 타입 정보를 명시적으로 저장
+
+```typescript
+interface Square {
+  kind: 'square';
+  width: number;
+}
+
+interface Rectangle {
+  kind: 'rectangle';
+  height: number;
+  width: number;
+}
+
+// tagged union
+type Shape = Square | Rectangle;
+
+function calculateArea(shape: Shape) {
+  if (shape.kind === 'rectangle') {
+    shape; // Regtangle로 타입 추론
+    return shape.width * shape.height;
+  } else {
+    shape; // Square로 타입 추론
+    return shape.width * shape.width;
+  }
+}
+```
+
+3. 타입을 클래스로
+
+- 타입(런타임 접근 불가)과 값(런타임 접근 가능)을 둘 다 사용하는 기법
+
+```typescript
+class Square {
+  constructor(public width: number) {}
+}
+
+class Rectangle extends Square {
+  constructor(public width: number, public height: number) {
+    super(width);
+  }
+}
+
+// 클래스를 타입으로 참조
+type Shape = Square | Rectangle;
+
+function calculateArea(shape: Shape) {
+  // 클래스를 값으로 참조
+  if (shape instanceof Rectangle) {
+    shape; // Regtangle로 타입 추론
+    return shape.width * shape.height;
+  } else {
+    shape; // Square로 타입 추론
+    return shape.width * shape.width;
+  }
+}
+```
+
+### 타입 연산은 런타임에 영향을 주지 않는다.
+
+- ex. string 또는 number 타입의 값을 number 타입으로 정제하여 반환하는 함수
+
+#### 잘못된 함수
+
+```typescript
+function asNumber(val: number | string): number {
+  return val as number;
+}
+```
+
+#### 실제 동작
+
+- 타입 구문과 타입 연산은 런타임에 아무런 영향을 주지 않음
+
+```typescript
+function asNumber(val) {
+  return val;
+}
+```
+
+#### 수정
+
+- 런타임 타입 체크 및 자바스크립트 연산 필요
+
+```typescript
+function asNumber(val: number | string): number {
+  return typeof val === 'string' ? Number(val) : val;
+}
+```
+
+### 런타임 타입은 선언된 타입과 다를 수 있다.
+
+- 런타임에서는 value의 boolean 타입이 제거됨
+- API 등 외부에서 받는 값으로 함수를 실행시키는 경우, 받은 값의 타입이 선언된 타입과 다를 수 있음
+
+```typescript
+function setLightSwitch(value: boolean) {
+  switch (value) {
+    case true:
+      turnLightOn();
+      break;
+    case false:
+      turnLightOff();
+      break;
+    default:
+      console.log('실행되지 않을까봐 걱정입니다.');
+  }
+}
+```
+
+### 타입스크립트 타입으로는 함수를 오버로드할 수 없다.
+
+> 함수 오버로딩  
+> 동일한 이름에 매개변수만 다른 여러 버전의 함수를 허용하는 것
+
+- 타입스크립트는 타입 오버로딩 기능을 지원하기는 하지만 온전히 타입 수준에서만 동작함
+  - 하나의 함수에 대해 복수의 선언문 작성 가능
+  - 구현체는 오직 하나뿐
+
+```typescript
+function add(a: number, b: number) {
+  // error: 중복된 함수 구현
+  return a + b;
+}
+
+function add(a: string, b: string) {
+  // error: 중복된 함수 구현
+  return a + b;
+}
+
+// 타입 함수 선언문은 여러 개 허용
+// 단, 런타임에는 제거됨
+function add(a: number, b: number): number; // OK
+function add(a: string, b: string): string; // OK
+
+// 런타임
+function add(a, b) {
+  return a + b;
+}
+```
+
+### 타입스크립트 타입은 런타임 성능에 영향을 주지 않는다.
+
+- 타입과 타입 연산자는 자바스크립트 컴파일 시점에 제거되기 때문에 런타임의 성능에는 아무런 영향을 주지 않음
+- 다만 `런타임` 오버헤드 대신 `빌드타임` 오버헤드는 존재
+  - 빌드타임 오버헤드가 큰 경우 빌드 툴에서 트랜스파일만 하도록 선택해 타입 체크는 스킵할 수 있음
+- 타입스크립트가 컴파일 하는 코드는 호환성 vs 성능 중 선택해야 하는 문제에 직면할 수 있음
+  - 다만 호환성과 성능 사이의 선택은 `컴파일 타깃`과 `언어` 레벨 문제
+  - 타입과는 무관
