@@ -281,3 +281,80 @@ function add(a, b) {
 - 타입스크립트가 컴파일 하는 코드는 호환성 vs 성능 중 선택해야 하는 문제에 직면할 수 있음
   - 다만 호환성과 성능 사이의 선택은 `컴파일 타깃`과 `언어` 레벨 문제
   - 타입과는 무관
+
+## 4. 구조적 타이핑에 익숙해지기
+
+- 자바스크립트는 본질적으로 덕 타이핑(duck typing) 기반
+  - 덕 타이핑: 객체가 어떤 타입에 부합하는 변수와 메서드를 가질 경우 객체를 해당 타입에 속하는 것으로 간주하는 방식
+
+#### 구조적 타이핑 예시
+
+```typescript
+interface Vertor2D {
+  x: number;
+  y: number;
+}
+
+function calclulateLength(v: Vertor2D) {
+  return Math.sqrt(v.x * v.x + v.y * v.y);
+}
+
+interface NamedVertor {
+  name: string;
+  x: number;
+  y: number;
+}
+
+const v: NamedVector = { x: 2, y: 4, name: 'Z33' };
+calculateLength(v); // 정상
+```
+
+- Vector2D와 NamedVector의 관계를 선언하지 않아도 NamedVertor는 number타입의 x와 y 프로퍼티를 가지고 있기 때문에 caculateLength 함수로 호출 가능
+- NamedVector를 위한 별도의 calculateLength를 구현할 필요 또한 없음
+- **Vector2D와 NamedVector의 구조가 호환되기 때문** (`구조적 타이핑`)
+
+#### 구조적 타이핑 문제 예시
+
+```typescript
+interface Vector3D {
+  x: number;
+  y: number;
+  z: number;
+}
+
+// 벡터의 길이를 1로 만드는 정규화 함수
+function normalize(v: Vector3D) {
+  const length = calculateLength(v);
+  return {
+    x: v.x / length,
+    y: v.y / length,
+    z: v.z / length,
+  };
+}
+
+normaliza({ x: 3, y: 4, z: 5 }); // { x: 0.6, y: 0.8, z: 1 }
+```
+
+- 정규화 함수는 기대값 1보다 큰 1.41 길이를 반환
+- calculateLength 함수는 2D 벡터를 기반으로 연산하지만 정규화 함수에서는 3D 벡터 기바으로 연산한 것이 버그
+- 그러나 구조적 타이핑의 문제로 타입 체커는 문제를 인식하지 못함
+  - 구조적 타이핑 관점에서는 Vector3D에 x와 y가 존재하기 때문에 Vector2D와 호환 가능하다고 인식
+- 즉, 함수를 호출할 때 매개변수에 선언되어 있는 속성을 가지고 있고 그 외 다른 속성을 추가적으로 가지고 있어도 호출이 가능함
+
+#### 클래스 할당과 관련된 문제 예시
+
+```typescript
+class C {
+  foo: string;
+  constructor(foo: string) {
+    this.foo = foo;
+  }
+}
+
+const c = new C('instance of C');
+const d: C = { foo: 'object literal' }; // 정상
+```
+- 변수 d는 string 타입의 foo 프로퍼티와 하나의 매개변수로 호출되는 생성자 프로퍼티를 가짐
+- 구조적으로 봤을 때에는 인스턴스 C에 필요한 속성과 생성자가 존재하기 때문에 문제가 없는 것으로 인식
+- 만약, 생성자 함수에 단순 할당이 아닌 연산 로직이 존재했다면 d는 생성자를 실행시키지 않으므로 문제가 발생
+
